@@ -1,0 +1,12 @@
+{
+    "name": "bermudaphp/reflection",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Bermuda\\Reflection\\": "src/"
+        }
+  },
+  "require": {
+    "php": "^8.0 || ^8.1"
+  }
+}
