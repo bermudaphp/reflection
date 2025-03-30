@@ -11,6 +11,6 @@ class ReflectionClass extends \ReflectionClass
 
     public function getAttribute(string $attribute): ?\ReflectionAttribute
     {
-        return $this->attributes[$attribute][0] ?? null;
+        return $this->getAttributes($attribute)[0] ?? null;
     }
 }
