@@ -13,4 +13,9 @@ class ReflectionClass extends \ReflectionClass
     {
         return $this->getAttributes($attribute)[0] ?? null;
     }
+
+    public function isInvokable(): bool
+    {
+        return $this->hasMethod('__invoke');
+    }
 }
