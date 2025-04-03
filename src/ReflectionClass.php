@@ -28,12 +28,14 @@ class ReflectionClass extends \ReflectionClass
         if ($deep) {
             return array_merge(
                 $this->getPropetryAttribute($name),
-                $this->getMethodAttribute($name)
+                $this->getMethodAttribute($name),
+                isset($this->getAttributes($name)[0]) ? [new ReflectionAttribute($this->getAttributes($name)[0], $this)] : []
             );
         }
-
-        $attr = $this->getAttributes($name)[0] ?? null;
-        return $attr ? new ReflectionAttribute($attr, $this) : null;
+        
+        return isset($this->getAttributes($name)[0]) ? 
+            new ReflectionAttribute($this->getAttributes($name)[0], $this) 
+            : null;
     }
 
     public function isInvokable(): bool
