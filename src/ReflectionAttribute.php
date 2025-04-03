@@ -9,7 +9,7 @@ class ReflectionAttribute
 {
     public function __construct(
         public readonly \ReflectionAttribute $attribute,
-        public readonly \ReflectionProperty|ReflectionFunction|ReflectionClass|\ReflectionMethod $subject
+        public readonly \ReflectionProperty|ReflectionFunction|ReflectionClass|\ReflectionMethod $target
     ) {
     }
     
