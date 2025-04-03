@@ -15,8 +15,8 @@ class ReflectionFunction extends \ReflectionFunction
         return $attribute !== null ? new ReflectionAttribute($attribute, $this) : null;
     }
 
-    public function hasAttribute(string $name): array
+    public function hasAttribute(string $name): bool
     {
-        return $this->getAttributes($name)[0] !== null;
+        return isset($this->getAttributes($name)[0]);
     }
 }
