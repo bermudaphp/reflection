@@ -7,7 +7,7 @@ class ReflectionFunction extends \ReflectionFunction
     /**
      * @template T
      * @param string-class<T> $name
-     * @return \ReflectionAttribute|null
+     * @return ReflectionAttribute|null
      */
     public function getAttribute(string $name): ?ReflectionAttribute
     {
