@@ -3,7 +3,6 @@
 namespace Bermuda\Reflection;
 
 use Closure;
-use Generator;
 use ReflectionClass;
 use ReflectionConstant;
 use ReflectionFunction;
@@ -43,17 +42,17 @@ final class Reflection
      * Retrieves all metadata attributes for the provided reflection object.
      *
      * If a name is supplied, only attributes matching the given class name are returned.
-     * The metadata is yielded as a generator producing Attribute instances.
+     * Returns an array of Attribute instances, or null if no attributes are found.
      *
      * @template T of object
      * @param ReflectionFunctionAbstract|ReflectionClass|ReflectionParameter|ReflectionConstant $reflector The reflection object to inspect.
      * @param class-string<T>|null $name Optional Attribute class name to filter by.
-     * @return Generator<T>|null Yields instances of the Attribute, or null if none are found.
+     * @return array<T>|null Returns array of Attribute instances, or null if no attributes found.
      */
-    public static function getMetadata(ReflectionFunctionAbstract|ReflectionClass|ReflectionParameter|ReflectionConstant $reflector, ?string $name = null): ?Generator
+    public static function getMetadata(ReflectionFunctionAbstract|ReflectionClass|ReflectionParameter|ReflectionConstant $reflector, ?string $name = null):? array
     {
-        if (empty($attributes = $reflector?->getAttributes($name) ?? [])) return null;
-        foreach ($attributes as $attribute) yield $attribute->newInstance();
+        if (empty($attributes = $reflector->getAttributes($name) ?? [])) return null;
+        return array_map(static fn(\ReflectionAttribute $attribute) => $attribute->newInstance(), $attributes);
     }
 
     /**
@@ -69,7 +68,7 @@ final class Reflection
      */
     public static function getFirstMetadata(ReflectionFunctionAbstract|ReflectionClass|ReflectionParameter|ReflectionConstant|ReflectionProperty $reflector, string $name): ?object
     {
-        $attributes = $reflector?->getAttributes($name) ?? [];
+        $attributes = $reflector->getAttributes($name) ?? [];
         return isset($attributes[0]) ? $attributes[0]->newInstance() : null;
     }
 
@@ -177,5 +176,122 @@ final class Reflection
         if (class_exists($class)) return self::$reflectors[$class] = new ReflectionClass($class);
 
         return null;
+    }
+
+    /**
+     * Retrieves all metadata attributes for the provided reflection class including its methods, properties, and constants.
+     *
+     * @template T of object
+     * @param ReflectionClass $reflector The reflection class to inspect.
+     * @param class-string<T>|null $name Optional Attribute class name to filter by.
+     * @return array<string, array<T>> Returns array where keys are paths and values are arrays of Attribute instances.
+     *                                  Path formats: ClassName, ClassName::methodName, ClassName::$propertyName, ClassName::CONSTANT_NAME
+     */
+    public static function getDeepMetadata(
+        ReflectionClass $reflector,
+        ?string $name = null
+    ): array {
+        $attributes = [];
+        $className = $reflector->getName();
+
+        // Get attributes from the class itself
+        $classAttributes = $reflector->getAttributes($name);
+        if (!empty($classAttributes)) {
+            $attributes[$className] = [];
+            foreach ($classAttributes as $attribute) {
+                $attributes[$className][] = $attribute->newInstance();
+            }
+        }
+
+        // Search in methods
+        foreach ($reflector->getMethods() as $method) {
+            $methodAttributes = $method->getAttributes($name);
+            if (!empty($methodAttributes)) {
+                $path = $className . '::' . $method->getName();
+                $attributes[$path] = [];
+                foreach ($methodAttributes as $attribute) {
+                    $attributes[$path][] = $attribute->newInstance();
+                }
+            }
+        }
+
+        // Search in properties
+        foreach ($reflector->getProperties() as $property) {
+            $propertyAttributes = $property->getAttributes($name);
+            if (!empty($propertyAttributes)) {
+                $path = $className . '::$' . $property->getName();
+                $attributes[$path] = [];
+                foreach ($propertyAttributes as $attribute) {
+                    $attributes[$path][] = $attribute->newInstance();
+                }
+            }
+        }
+
+        // Search in class constants
+        foreach ($reflector->getReflectionConstants() as $constant) {
+            $constantAttributes = $constant->getAttributes($name);
+            if (!empty($constantAttributes)) {
+                $path = $className . '::' . $constant->getName();
+                $attributes[$path] = [];
+                foreach ($constantAttributes as $attribute) {
+                    $attributes[$path][] = $attribute->newInstance();
+                }
+            }
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Retrieves the first metadata Attribute instance found in the class or its members.
+     *
+     * @template T of object
+     * @param ReflectionClass $reflector The reflection class to inspect.
+     * @param class-string<T> $name The Attribute class name to look for.
+     * @return object<T>|null Returns the first Attribute instance if found, or null if not present.
+     */
+    public static function getFirstDeepMetadata(
+        ReflectionClass $reflector,
+        string $name
+    ): ?object {
+        $attributes = self::getDeepMetadata($reflector, $name);
+
+        // Get first attribute from first path
+        $firstPath = array_key_first($attributes);
+        if ($firstPath !== null && !empty($attributes[$firstPath])) {
+            return $attributes[$firstPath][0];
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks whether the class or its members have any metadata attributes matching the specified name.
+     *
+     * @param ReflectionClass $reflector The reflection class to check.
+     * @param string $name The Attribute class name to look for.
+     * @return bool Returns true if at least one matching Attribute is found; otherwise, false.
+     */
+    public static function hasDeepMetadata(
+        ReflectionClass $reflector,
+        string $name
+    ): bool {
+        // Check class itself
+        if (!empty($reflector->getAttributes($name))) {
+            return true;
+        }
+
+        // Check methods
+        if (array_any($reflector->getMethods(), static fn($method) => !empty($method->getAttributes($name)))) {
+            return true;
+        }
+
+        // Check properties
+        if (array_any($reflector->getProperties(), static fn($property) => !empty($property->getAttributes($name)))) {
+            return true;
+        }
+
+        // Check constants
+        return array_any($reflector->getReflectionConstants(), static fn($constant) => !empty($constant->getAttributes($name)));
     }
 }
