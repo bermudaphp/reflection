@@ -1,6 +1,6 @@
 # Bermuda Reflection
 
-**[Русская версия](README_ru.md)**
+**[Русская версия](README.RU.md)**
 
 A powerful static utility class for PHP reflection operations with built-in caching and advanced metadata (attributes) handling. Provides convenient methods for working with PHP 8+ attributes and reflection objects.
 
